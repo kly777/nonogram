@@ -17,7 +17,7 @@ export function solveNonogram(
     const rowValidCache: Record<string, boolean> = {};
     const colValidCache: Record<string, boolean> = {};
 
-    // 生成所有可能组合（带缓存）
+    // 生成所有可能组合
     let rowPossibles = rowHints.map((hint, i) => {
         const key = `${hint.join(",")},${cols}`;
         if (!rowValidCache[key]) {
@@ -46,7 +46,7 @@ export function solveNonogram(
         changed = false;
         iteration++;
 
-        // 行处理
+        // 行
         for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
             const row = getRow(grid, rowIndex);
             if (!row) continue;
@@ -63,7 +63,7 @@ export function solveNonogram(
             }
         }
 
-        // 列处理
+        // 列
         for (let colIndex = 0; colIndex < cols; colIndex++) {
             const col = getCol(grid, colIndex);
             if (!col) continue;

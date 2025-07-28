@@ -7,7 +7,7 @@
       <div class="col-header" :style="{ gridTemplateColumns: `120px repeat(${props.cols}, 40px)` }">
         <div class="empty-cell"></div>
         <div class="col-title" v-for="col in props.cols" :key="'col-' + col">
-          <label>Col {{ col }}</label>
+          <label>{{ col }}</label>
           <input type="text" v-model="colValues[col - 1]" placeholder="e.g. 2 3" />
         </div>
       </div>
@@ -18,7 +18,7 @@
           :style="{ gridTemplateColumns: `120px repeat(${props.cols}, 40px)` }">
           <!-- 行标题 -->
           <div class="row-title">
-            <label>Row {{ row }}</label>
+            <label>{{ row }}</label>
             <input type="text" v-model="rowValues[row - 1]" placeholder="e.g. 1 4" />
           </div>
 
@@ -65,6 +65,7 @@ const props = defineProps<{
 const rowValues = ref<string[]>(
   Array(props.rows).fill("")
 )
+
 const colValues = ref<string[]>(
   Array(props.cols).fill("")
 )
@@ -93,6 +94,7 @@ const colHints = computed(() => {
 })
 
 watch(() => [rowHints.value, colHints.value, props.rows, props.cols], () => {
+  console.log(rowHints.value)
   result.value = solveNonogram(rowHints.value, colHints.value, props.rows, props.cols)
   console.log(result.value)
 })
@@ -112,7 +114,7 @@ h2 {
   margin-top: 0;
   text-align: center;
   margin-bottom: 20px;
-  color: #333;
+  color: #5d7c9f;
 }
 
 .puzzle-container {
@@ -148,9 +150,14 @@ h2 {
   color: #666;
 }
 
+.row-title label {
+  margin-right: 14px;
+}
+
+
 .puzzle-grid {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .puzzle-row {
@@ -161,8 +168,9 @@ h2 {
 
 .row-title {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
+  align-items: center;
   padding-right: 10px;
   grid-column: 1;
 }
@@ -172,19 +180,19 @@ h2 {
   height: 40px;
   border: 1px solid #ddd;
   border-radius: 2px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .filled {
-  background-color: #2c3e50;
+  background-color: #6a89cc;
 }
 
 .empty {
-  background-color: #ecf0f1;
+  background-color: #f8f8f8;
 }
 
 .unknown {
-  background-color: #bdc3c7;
+  background-color: #e0e0e0;
 }
 
 input {
@@ -197,8 +205,8 @@ input {
 
 input:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: #6a89cc;
+  box-shadow: 0 0 0 2px rgba(106, 137, 204, 0.2);
 }
 
 .status {
@@ -212,7 +220,7 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #2c3e50;
+  color: #555;
 }
 
 .color-box {

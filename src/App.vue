@@ -38,7 +38,7 @@ h4 {
   font-size: 24px;
   margin-top: 0;
   text-align: center;
-  color: #2c3e50;
+  color: #5d7c9f;
   margin-bottom: 15px;
 }
 
@@ -54,9 +54,10 @@ h4 {
   gap: 30px;
   margin-bottom: 30px;
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: #fff;
   border-radius: 8px;
-  color: #2c3e50;
+  color: #555;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .input-group {
@@ -83,7 +84,7 @@ h4 {
   padding: 20px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 768px) {
