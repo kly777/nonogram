@@ -18,7 +18,7 @@ export function solveNonogram(
     const colValidCache: Record<string, boolean> = {};
 
     // 生成所有可能组合
-    let rowPossibles = rowHints.map((hint, i) => {
+    let rowPossibles = rowHints.map((hint) => {
         const key = `${hint.join(",")},${cols}`;
         if (!rowValidCache[key]) {
             rowValidCache[key] = validateConstraints([hint], cols) !== "fault";
@@ -26,7 +26,7 @@ export function solveNonogram(
         return rowValidCache[key] ? possible(hint, cols) : [];
     });
 
-    let colPossibles = colHints.map((hint, i) => {
+    let colPossibles = colHints.map((hint) => {
         const key = `${hint.join(",")},${rows}`;
         if (!colValidCache[key]) {
             colValidCache[key] = validateConstraints([hint], rows) !== "fault";
