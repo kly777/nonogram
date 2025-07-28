@@ -13,13 +13,26 @@ export function solveNonogram(
     ) {
         return [];
     }
-    console.log("rowHints", rowHints, "colHints", colHints);
-    console.log("rows", rows, "cols", cols);
+    // 缓存行约束验证结果
+    const rowValidCache: Record<string, boolean> = {};
+    const colValidCache: Record<string, boolean> = {};
 
-    let rowPossibles = rowHints.map((hint) => possible(hint, cols));
-    console.log(rowPossibles);
-    let colPossibles = colHints.map((hint) => possible(hint, rows));
-    console.log(colPossibles);
+    // 生成所有可能组合（带缓存）
+    let rowPossibles = rowHints.map((hint, i) => {
+        const key = `${hint.join(",")},${cols}`;
+        if (!rowValidCache[key]) {
+            rowValidCache[key] = validateConstraints([hint], cols) !== "fault";
+        }
+        return rowValidCache[key] ? possible(hint, cols) : [];
+    });
+
+    let colPossibles = colHints.map((hint, i) => {
+        const key = `${hint.join(",")},${rows}`;
+        if (!colValidCache[key]) {
+            colValidCache[key] = validateConstraints([hint], rows) !== "fault";
+        }
+        return colValidCache[key] ? possible(hint, rows) : [];
+    });
 
     // 初始化网格（true=填充，false=空，null=未知）
     let grid: (boolean | null)[][] = Array(rows)
@@ -28,19 +41,19 @@ export function solveNonogram(
     let changed = true;
     let iteration = 0;
     const maxIterations = rows * cols * 2; // 设置最大迭代次数防止无限循环
-    
+
     while (changed && iteration < maxIterations) {
         changed = false;
         iteration++;
-        
+
         // 行处理
         for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
             const row = getRow(grid, rowIndex);
             if (!row) continue;
-            
+
             const filteredRows = filter(row, rowPossibles[rowIndex]);
             if (filteredRows.length === 0) continue;
-            
+
             const commonPart = getCommonPart(filteredRows);
             for (let i = 0; i < commonPart.length; i++) {
                 if (commonPart[i] !== null && grid[rowIndex][i] === null) {
@@ -49,15 +62,15 @@ export function solveNonogram(
                 }
             }
         }
-        
+
         // 列处理
         for (let colIndex = 0; colIndex < cols; colIndex++) {
             const col = getCol(grid, colIndex);
             if (!col) continue;
-            
+
             const filteredCols = filter(col, colPossibles[colIndex]);
             if (filteredCols.length === 0) continue;
-            
+
             const commonPart = getCommonPart(filteredCols);
             for (let i = 0; i < commonPart.length; i++) {
                 if (commonPart[i] !== null && grid[i][colIndex] === null) {
@@ -67,45 +80,50 @@ export function solveNonogram(
             }
         }
     }
-    
-    console.log(`Completed in ${iteration} iterations`);
 
     return grid;
 }
 
-function getCommonPart(known: boolean[][]): (boolean | null)[] {
-    if (known.length === 0) return [];
-    if (known.length === 1) return known[0];
+function getCommonPart(possibles: boolean[][]): (boolean | null)[] {
+    if (possibles.length === 0) return [];
+    if (possibles.length === 1) return possibles[0];
 
-    const length = known[0].length;
-    const samePart: (boolean | null)[] = Array(length).fill(null);
+    const len = possibles[0].length;
+    const result: (boolean | null)[] = new Array(len).fill(null);
 
-    for (let i = 0; i < length; i++) {
-        const firstVal = known[0][i];
-        const isSame = known.every((arr) => arr[i] === firstVal);
+    for (let i = 0; i < len; i++) {
+        let allTrue = true;
+        let allFalse = true;
 
-        samePart[i] = isSame ? firstVal : null;
+        for (const p of possibles) {
+            if (p[i]) {
+                allFalse = false;
+            } else {
+                allTrue = false;
+            }
+            // 如果既不全为真也不全为假，提前退出
+            if (!allTrue && !allFalse) break;
+        }
+
+        if (allTrue) result[i] = true;
+        else if (allFalse) result[i] = false;
     }
 
-    return samePart;
+    return result;
 }
 
 function filter(known: (boolean | null)[], poss: boolean[][]) {
-    let res: boolean[][] = [];
-    poss.forEach((row) => {
-        let ok = true;
+    const res: boolean[][] = [];
+    for (const row of poss) {
+        let match = true;
         for (let i = 0; i < row.length; i++) {
-            if (known[i] === null) {
-                continue;
-            } else if (known[i] !== row[i]) {
-                console.log("filter", known[i], row[i]);
-                ok = false;
+            if (known[i] !== null && known[i] !== row[i]) {
+                match = false;
+                break;
             }
         }
-        if (ok) {
-            res.push(row);
-        }
-    });
+        if (match) res.push(row);
+    }
     return res;
 }
 
@@ -145,16 +163,19 @@ function validateConstraints(values: number[][], length: number) {
 const possibleCache: Record<string, boolean[][]> = {};
 
 function possible(values: number[], length: number) {
-    const key = `${values.join(',')},${length}`;
+    const key = `${values.join(",")},${length}`;
     if (possibleCache[key]) return possibleCache[key];
-    
-    const resNum = length - values.reduce((acc, val) => acc + val, 0) - (values.length - 1);
+
+    const resNum =
+        length -
+        values.reduce((acc, val) => acc + val, 0) -
+        (values.length - 1);
     if (resNum < 0) return [];
-    
+
     const blankNum = values.length + 1;
     const bres = generateCombinations(resNum, blankNum);
     const pos = genPos(bres, values);
-    
+
     possibleCache[key] = pos;
     return pos;
 }
@@ -181,15 +202,15 @@ function cross(bre: number[], values: number[]) {
 function generateCombinations(resNum: number, blankNum: number): number[][] {
     // 记忆化缓存
     const memo: Record<string, number[][]> = {};
-    
+
     function dp(remaining: number, index: number): number[][] {
         const key = `${remaining},${index}`;
         if (memo[key]) return memo[key];
-        
+
         if (index === blankNum) {
             return remaining === 0 ? [[]] : [];
         }
-        
+
         const results: number[][] = [];
         for (let i = 0; i <= remaining; i++) {
             const rest = dp(remaining - i, index + 1);
@@ -197,17 +218,15 @@ function generateCombinations(resNum: number, blankNum: number): number[][] {
                 results.push([i, ...r]);
             }
         }
-        
+
         memo[key] = results;
         return results;
     }
-    
+
     const combinations = dp(resNum, 0);
-    
+
     // 调整中间间隔的空白数
-    return combinations.map(comb =>
-        comb.map((val, idx) =>
-            (idx > 0 && idx < blankNum - 1) ? val + 1 : val
-        )
+    return combinations.map((comb) =>
+        comb.map((val, idx) => (idx > 0 && idx < blankNum - 1 ? val + 1 : val))
     );
 }

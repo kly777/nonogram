@@ -14,8 +14,12 @@
 
         <!-- 单元格区域 -->
         <div class="cell-row">
-          <div class="border-cell" :class="{ filled: result?.[row - 1]?.[col - 1] }" v-for="col in props.cols"
-            :key="col"></div>
+          <div class="border-cell" :class="{
+            filled: result?.[row - 1]?.[col - 1] === true,
+            empty: result?.[row - 1]?.[col - 1] === false,
+            null: result?.[row - 1]?.[col - 1] === null
+
+          }" v-for="col in props.cols" :key="col"></div>
         </div>
       </div>
     </div>
@@ -81,6 +85,16 @@ watch(() => [rowHints.value, colHints.value, props.rows, props.cols], () => {
 <style scoped>
 .filled {
   background-color: black;
+}
+
+.empty {
+  background-color: white;
+  /* 或其他颜色 */
+}
+
+.null {
+  background-color: gray;
+  /* 或其他颜色 */
 }
 
 .border-container {
