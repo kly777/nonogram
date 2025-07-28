@@ -1,34 +1,54 @@
 <template>
-  {{ props.rows }}*{{ props.cols }} | {{ rowValues }}{{ colValues }}
-  <div class="border-container">
-    <!-- 列输入框顶部对齐 -->
-    <div class="col-header">
-      <input type="text" v-for="col in props.cols" :key="col" v-model="colValues[col - 1]" />
-    </div>
+  <div class="nonogram-solver">
+    <h2>Nonogram Solver ({{ props.rows }}×{{ props.cols }})</h2>
 
-    <!-- 行输入框和内容区域 -->
-    <div class="border-grid">
-      <div class="border-row" v-for="row in props.rows" :key="row">
-        <!-- 行输入框 -->
-        <input type="text" v-model="rowValues[row - 1]" />
+    <div class="puzzle-container">
+      <!-- 列标题 -->
+      <div class="col-header" :style="{ gridTemplateColumns: `120px repeat(${props.cols}, 40px)` }">
+        <div class="empty-cell"></div>
+        <div class="col-title" v-for="col in props.cols" :key="'col-' + col">
+          <label>Col {{ col }}</label>
+          <input type="text" v-model="colValues[col - 1]" placeholder="e.g. 2 3" />
+        </div>
+      </div>
 
-        <!-- 单元格区域 -->
-        <div class="cell-row">
-          <div class="border-cell" :class="{
+      <!-- 行和内容区域 -->
+      <div class="puzzle-grid">
+        <div class="puzzle-row" v-for="row in props.rows" :key="'row-' + row"
+          :style="{ gridTemplateColumns: `120px repeat(${props.cols}, 40px)` }">
+          <!-- 行标题 -->
+          <div class="row-title">
+            <label>Row {{ row }}</label>
+            <input type="text" v-model="rowValues[row - 1]" placeholder="e.g. 1 4" />
+          </div>
+
+          <!-- 单元格区域 -->
+          <div class="cell" :class="{
             filled: result?.[row - 1]?.[col - 1] === true,
             empty: result?.[row - 1]?.[col - 1] === false,
-            null: result?.[row - 1]?.[col - 1] === null
-
-          }" v-for="col in props.cols" :key="col"></div>
+            unknown: result?.[row - 1]?.[col - 1] === null
+          }" v-for="col in props.cols" :key="'cell-' + row + '-' + col">
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- 结果状态 -->
+    <div class="status">
+      <div class="status-item">
+        <div class="color-box filled"></div>
+        <span>Filled</span>
+      </div>
+      <div class="status-item">
+        <div class="color-box empty"></div>
+        <span>Empty</span>
+      </div>
+      <div class="status-item">
+        <div class="color-box unknown"></div>
+        <span>Unknown</span>
+      </div>
+    </div>
   </div>
-
-  <!-- 调试显示 -->
-  {{ rowHints }}{{ colHints }}
-  <div> {{ result }}</div>
-
 </template>
 
 <script setup lang="ts">
@@ -83,62 +103,121 @@ watch(() => [rowHints.value, colHints.value, props.rows, props.cols], () => {
 </script>
 
 <style scoped>
+.nonogram-solver {
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  margin-top: 0;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.puzzle-container {
+  display: grid;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.col-header {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 5px;
+  position: sticky;
+  left: 0;
+}
+
+.empty-cell {
+  /* 占位列 */
+  grid-column: 1;
+}
+
+.col-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.col-title label,
+.row-title label {
+  font-size: 12px;
+  color: #666;
+}
+
+.puzzle-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.puzzle-row {
+  display: grid;
+  gap: 4px;
+  min-width: max-content;
+}
+
+.row-title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 10px;
+  grid-column: 1;
+}
+
+.cell {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
 .filled {
-  background-color: black;
+  background-color: #2c3e50;
 }
 
 .empty {
-  background-color: white;
-  /* 或其他颜色 */
+  background-color: #ecf0f1;
 }
 
-.null {
-  background-color: gray;
-  /* 或其他颜色 */
+.unknown {
+  background-color: #bdc3c7;
 }
 
-.border-container {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 0.5rem;
-}
-
-/* 列输入框水平排列 */
-.col-header {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* 输入框基础样式 */
 input {
-  width: 4rem;
-  padding: 0.2rem;
-  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
 }
 
-/* 行级布局 */
-.border-grid {
+input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.status {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
 }
 
-.border-row {
-  display: grid;
-  grid-template-columns: 5rem 1fr;
-  /* 固定行输入框宽度 */
-  gap: 0.5rem;
-  align-items: start;
-}
-
-/* 单元格行布局 */
-.cell-row {
+.status-item {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 6px;
+  color: #2c3e50;
 }
 
-.border-cell {
-  width: 2rem;
-  height: 2rem;
+.color-box {
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgb(0, 0, 0);
 }
 </style>
