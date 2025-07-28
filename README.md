@@ -1,5 +1,34 @@
-# Vue 3 + TypeScript + Vite
+# Nonogram Puzzle Solver
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Nonogram求解器。
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## 功能特性
+
+- 实时求解并显示结果
+- 直观的单元格状态标记（填充/空白/未知）
+
+## 技术栈
+
+- Vue 3 (Composition API)
+- TypeScript
+- Vite
+
+## 使用说明
+
+### 安装依赖
+
+```bash
+pnpm install
+```
+
+### 开发
+
+```bash
+pnpm dev
+```
+
+### 构建
+
+```bash
+pnpm build
+```
