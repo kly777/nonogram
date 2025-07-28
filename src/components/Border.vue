@@ -228,4 +228,21 @@ input:focus {
   height: 20px;
   border: 1px solid rgb(0, 0, 0);
 }
+
+
+.cell:nth-child(5n+1) {
+  border-right: 1px solid #999;
+}
+
+.cell:nth-child(5n+2) {
+  border-left: 1px solid #999;
+}
+
+.puzzle-row:nth-child(5n) .cell {
+  border-bottom:1px solid #999;
+}
+
+.puzzle-row:nth-child(5n+1) .cell {
+  border-top: 1px solid #999;
+}
 </style>
