@@ -18,32 +18,32 @@ export function solveNonogram(
     const colValidCache: Record<string, boolean> = {};
 
     // 生成所有可能组合
-    let rowPossibles = rowHints.map((hint) => {
+    let rowCandidates = rowHints.map((hint) => {
         const key = `${hint.join(",")},${cols}`;
         if (!rowValidCache[key]) {
             rowValidCache[key] = validateConstraints([hint], cols) !== "fault";
         }
-        return rowValidCache[key] ? possible(hint, cols) : [];
+        return rowValidCache[key] ? generatePossibleRows(hint, cols) : [];
     });
 
-    let colPossibles = colHints.map((hint) => {
+    let colCandidates = colHints.map((hint) => {
         const key = `${hint.join(",")},${rows}`;
         if (!colValidCache[key]) {
             colValidCache[key] = validateConstraints([hint], rows) !== "fault";
         }
-        return colValidCache[key] ? possible(hint, rows) : [];
+        return colValidCache[key] ? generatePossibleRows(hint, rows) : [];
     });
 
     // 初始化网格（true=填充，false=空，null=未知）
     let grid: (boolean | null)[][] = Array(rows)
         .fill(null)
         .map(() => Array(cols).fill(null));
-    let changed = true;
+    let hasChanged = true;
     let iteration = 0;
     const maxIterations = rows * cols * 2; // 设置最大迭代次数防止无限循环
 
-    while (changed && iteration < maxIterations) {
-        changed = false;
+    while (hasChanged && iteration < maxIterations) {
+        hasChanged = false;
         iteration++;
 
         // 行
@@ -51,14 +51,14 @@ export function solveNonogram(
             const row = getRow(grid, rowIndex);
             if (!row) continue;
 
-            const filteredRows = filter(row, rowPossibles[rowIndex]);
+            const filteredRows = filterCandidates(row, rowCandidates[rowIndex]);
             if (filteredRows.length === 0) continue;
 
-            const commonPart = getCommonPart(filteredRows);
+            const commonPart = findCommonSolution(filteredRows);
             for (let i = 0; i < commonPart.length; i++) {
                 if (commonPart[i] !== null && grid[rowIndex][i] === null) {
                     grid[rowIndex][i] = commonPart[i];
-                    changed = true;
+                    hasChanged = true;
                 }
             }
         }
@@ -68,14 +68,14 @@ export function solveNonogram(
             const col = getCol(grid, colIndex);
             if (!col) continue;
 
-            const filteredCols = filter(col, colPossibles[colIndex]);
+            const filteredCols = filterCandidates(col, colCandidates[colIndex]);
             if (filteredCols.length === 0) continue;
 
-            const commonPart = getCommonPart(filteredCols);
+            const commonPart = findCommonSolution(filteredCols);
             for (let i = 0; i < commonPart.length; i++) {
                 if (commonPart[i] !== null && grid[i][colIndex] === null) {
                     grid[i][colIndex] = commonPart[i];
-                    changed = true;
+                    hasChanged = true;
                 }
             }
         }
@@ -84,7 +84,7 @@ export function solveNonogram(
     return grid;
 }
 
-function getCommonPart(possibles: boolean[][]): (boolean | null)[] {
+function findCommonSolution(possibles: boolean[][]): (boolean | null)[] {
     if (possibles.length === 0) return [];
     if (possibles.length === 1) return possibles[0];
 
@@ -112,7 +112,7 @@ function getCommonPart(possibles: boolean[][]): (boolean | null)[] {
     return result;
 }
 
-function filter(known: (boolean | null)[], poss: boolean[][]) {
+function filterCandidates(known: (boolean | null)[], poss: boolean[][]) {
     const res: boolean[][] = [];
     for (const row of poss) {
         let match = true;
@@ -162,33 +162,35 @@ function validateConstraints(values: number[][], length: number) {
 // 缓存计算结果
 const possibleCache: Record<string, boolean[][]> = {};
 
-function possible(values: number[], length: number) {
+function generatePossibleRows(values: number[], length: number) {
     const key = `${values.join(",")},${length}`;
     if (possibleCache[key]) return possibleCache[key];
 
-    const resNum =
+    const totalBlanks =
         length -
         values.reduce((acc, val) => acc + val, 0) -
         (values.length - 1);
-    if (resNum < 0) return [];
+    if (totalBlanks < 0) return [];
 
-    const blankNum = values.length + 1;
-    const bres = generateCombinations(resNum, blankNum);
-    const pos = genPos(bres, values);
+    const gapCount = values.length + 1;
+    const blankCombinations = generateCombinations(totalBlanks, gapCount);
+    const allRows = generateAllRows(blankCombinations, values);
 
-    possibleCache[key] = pos;
-    return pos;
+    possibleCache[key] = allRows;
+    return allRows;
 }
 
-function genPos(bres: number[][], values: number[]) {
+function generateAllRows(blankCombinations: number[][], values: number[]) {
     let res: boolean[][] = [];
-    bres.forEach((bre) => res.push(cross(bre, values)));
+    blankCombinations.forEach((blankCombination) =>
+        res.push(generateRowFromBlankCombination(blankCombination, values))
+    );
     return res;
 }
-function cross(bre: number[], values: number[]) {
+function generateRowFromBlankCombination(blankCombination: number[], values: number[]) {
     let res = [];
-    for (let i = 0; i < bre.length; i++) {
-        for (let j = 0; j < bre[i]; j++) {
+    for (let i = 0; i < blankCombination.length; i++) {
+        for (let j = 0; j < blankCombination[i]; j++) {
             res.push(false);
         }
         for (let j = 0; j < values[i]; j++) {
