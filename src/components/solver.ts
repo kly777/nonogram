@@ -3,15 +3,15 @@ export function solveNonogram(
     colHints: number[][],
     rows: number,
     cols: number
-): (boolean | null)[][] {
+) {
     if (rows <= 0 || cols <= 0) {
-        return [];
+        return { solution: [], status: "fault" };
     }
     if (
         validateConstraints(rowHints, cols) === "fault" ||
         validateConstraints(colHints, rows) === "fault"
     ) {
-        return [];
+        return { solution: [], status: "fault" };
     }
     // 缓存行约束验证结果
     const rowValidCache: Record<string, boolean> = {};
@@ -39,10 +39,11 @@ export function solveNonogram(
         .fill(null)
         .map(() => Array(cols).fill(null));
     let hasChanged = true;
+    let hasWrong = false;
     let iteration = 0;
     const maxIterations = rows * cols * 2; // 设置最大迭代次数防止无限循环
 
-    while (hasChanged && iteration < maxIterations) {
+    while (hasChanged && iteration < maxIterations && !hasWrong) {
         hasChanged = false;
         iteration++;
 
@@ -52,7 +53,10 @@ export function solveNonogram(
             if (!row) continue;
 
             const filteredRows = filterCandidates(row, rowCandidates[rowIndex]);
-            if (filteredRows.length === 0) continue;
+            if (filteredRows.length === 0) {
+                hasWrong = true;
+                break;
+            }
 
             const commonPart = findCommonSolution(filteredRows);
             for (let i = 0; i < commonPart.length; i++) {
@@ -69,7 +73,10 @@ export function solveNonogram(
             if (!col) continue;
 
             const filteredCols = filterCandidates(col, colCandidates[colIndex]);
-            if (filteredCols.length === 0) continue;
+            if (filteredCols.length === 0) {
+                hasWrong = true;
+                break;
+            }
 
             const commonPart = findCommonSolution(filteredCols);
             for (let i = 0; i < commonPart.length; i++) {
@@ -81,9 +88,31 @@ export function solveNonogram(
         }
     }
 
-    return grid;
-}
+    let status: SolutionStatus = "none";
+    if (hasWrong) {
+        status = "none";
+    } else {
+        // 检查是否仍有未确定的单元格
+        const hasUnknown = grid.some((row) => row.includes(null));
+        if (!hasUnknown) {
+            status = "unique";
+        } else {
+            status = "multiple";
+            // 生成一个完整解
+            const fullSolution = backtrackSolution(
+                rowHints,
+                colHints,
+                rows,
+                cols,
+                grid
+            );
+            return { solution: fullSolution, status };
+        }
+    }
 
+    return { solution: grid, status };
+}
+export type SolutionStatus = "none" | "unique" | "multiple";
 function findCommonSolution(possibles: boolean[][]): (boolean | null)[] {
     if (possibles.length === 0) return [];
     if (possibles.length === 1) return possibles[0];
@@ -187,7 +216,10 @@ function generateAllRows(blankCombinations: number[][], values: number[]) {
     );
     return res;
 }
-function generateRowFromBlankCombination(blankCombination: number[], values: number[]) {
+function generateRowFromBlankCombination(
+    blankCombination: number[],
+    values: number[]
+) {
     let res = [];
     for (let i = 0; i < blankCombination.length; i++) {
         for (let j = 0; j < blankCombination[i]; j++) {
@@ -231,4 +263,107 @@ function generateCombinations(resNum: number, blankNum: number): number[][] {
     return combinations.map((comb) =>
         comb.map((val, idx) => (idx > 0 && idx < blankNum - 1 ? val + 1 : val))
     );
+}
+
+function backtrackSolution(
+    rowHints: number[][],
+    colHints: number[][],
+    rows: number,
+    cols: number,
+    partialGrid: (boolean | null)[][]
+): boolean[][] {
+    const grid: boolean[][] = partialGrid.map(
+        (row) =>
+            row.map((cell) => (cell !== null ? cell : undefined)) as boolean[]
+    );
+
+    // 生成每一行的候选解
+    const rowCandidates = rowHints.map((hint, i) =>
+        generatePossibleRows(hint, cols).filter((row) =>
+            isValidRowWithPartial(row, partialGrid[i])
+        )
+    );
+
+    // 回溯填充
+    function backtrack(rowIndex: number): boolean {
+        if (rowIndex === rows) {
+            return isValidSolution(grid, colHints, cols);
+        }
+
+        for (const candidate of rowCandidates[rowIndex]) {
+            grid[rowIndex] = candidate;
+            if (isColumnConstraintsValid(grid, colHints, rowIndex + 1, cols)) {
+                if (backtrack(rowIndex + 1)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    backtrack(0);
+    return grid;
+}
+
+// 辅助函数：检查候选行是否与部分解兼容
+function isValidRowWithPartial(
+    candidate: boolean[],
+    partial: (boolean | null)[]
+): boolean {
+    return candidate.every(
+        (val, i) => partial[i] === null || val === partial[i]
+    );
+}
+
+// 辅助函数：检查列约束是否满足
+function isColumnConstraintsValid(
+    grid: boolean[][],
+    colHints: number[][],
+    rows: number,
+    cols: number
+): boolean {
+    for (let c = 0; c < cols; c++) {
+        const col = grid.slice(0, rows).map((row) => row[c]);
+        const runLength = getRunLength(col);
+        if (!arraysEqual(runLength, colHints[c])) return false;
+    }
+    return true;
+}
+
+// 辅助函数：计算行/列的块长度
+function getRunLength(arr: boolean[]): number[] {
+    const result: number[] = [];
+    let count = 0;
+    for (const val of arr) {
+        if (val) {
+            count++;
+        } else if (count > 0) {
+            result.push(count);
+            count = 0;
+        }
+    }
+    if (count > 0) result.push(count);
+    return result;
+}
+
+function arraysEqual(a: number[], b: number[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+function isValidSolution(
+    grid: boolean[][],
+    colHints: number[][],
+    cols: number
+): boolean {
+    for (let c = 0; c < cols; c++) {
+        const col = grid.map((row) => row[c]);
+        const runLength = getRunLength(col);
+        if (!arraysEqual(runLength, colHints[c])) {
+            return false;
+        }
+    }
+    return true;
 }

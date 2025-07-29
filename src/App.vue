@@ -2,8 +2,8 @@
 import { ref } from 'vue';
 import Border from './components/Border.vue';
 
-const row = ref(15)
-const col = ref(15)
+const row = ref(5)
+const col = ref(5)
 </script>
 
 <template>

@@ -1,14 +1,12 @@
 <template>
   <div class="nonogram-solver">
-    <h2>Nonogram Solver ({{ props.rows }}×{{ props.cols }})</h2>
-
     <div class="puzzle-container">
       <!-- 列标题 -->
       <div class="col-header" :style="{ gridTemplateColumns: `120px repeat(${props.cols}, 40px)` }">
-        <div class="empty-cell"></div>
+        <div class="status-cell">{{ status }}</div>
         <div class="col-title" v-for="col in props.cols" :key="'col-' + col">
           <label>{{ col }}</label>
-          <input type="text" v-model="colValues[col - 1]" placeholder="e.g. 2 3" />
+          <input type="text" v-model="colValues[col - 1]" placeholder="" />
         </div>
       </div>
 
@@ -19,7 +17,7 @@
           <!-- 行标题 -->
           <div class="row-title">
             <label>{{ row }}</label>
-            <input type="text" v-model="rowValues[row - 1]" placeholder="e.g. 1 4" />
+            <input type="text" v-model="rowValues[row - 1]" placeholder="" />
           </div>
 
           <!-- 单元格区域 -->
@@ -56,6 +54,7 @@ import { computed, ref, watch } from 'vue'
 import { solveNonogram } from './solver';
 
 const result = ref<(boolean | null)[][]>([])
+const status = ref<string>('unknown')
 
 const props = defineProps<{
   rows: number
@@ -63,11 +62,12 @@ const props = defineProps<{
 }>()
 
 const rowValues = ref<string[]>(
-  Array(props.rows).fill("")
+  ["1 1 1", "5", "3", "1 1", "3"]
 )
 
+
 const colValues = ref<string[]>(
-  Array(props.cols).fill("")
+  ["2", "4", "3 1", "4", "2"]
 )
 
 watch(() => [props.rows, props.cols], ([rows, cols]) => {
@@ -95,9 +95,11 @@ const colHints = computed(() => {
 
 watch(() => [rowHints.value, colHints.value, props.rows, props.cols], () => {
   console.log(rowHints.value)
-  result.value = solveNonogram(rowHints.value, colHints.value, props.rows, props.cols)
+  let solve = solveNonogram(rowHints.value, colHints.value, props.rows, props.cols)
+  result.value = solve.solution
+  status.value = solve.status
   console.log(result.value)
-})
+},{immediate: true})
 
 
 
@@ -132,7 +134,11 @@ h2 {
   left: 0;
 }
 
-.empty-cell {
+.status-cell {
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  padding: 4px;
   /* 占位列 */
   grid-column: 1;
 }
@@ -239,7 +245,7 @@ input:focus {
 }
 
 .puzzle-row:nth-child(5n) .cell {
-  border-bottom:1px solid #999;
+  border-bottom: 1px solid #999;
 }
 
 .puzzle-row:nth-child(5n+1) .cell {
